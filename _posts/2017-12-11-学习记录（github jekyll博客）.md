@@ -25,9 +25,9 @@
 
 ![](https://timgsa.baidu.com/timg?image&quality=80&size=b9999_10000&sec=1512990414548&di=ce8b9fa2c9300726ded85765a966d1c0&imgtype=0&src=http%3A%2F%2Fi2.hdslb.com%2Fbfs%2Fface%2F38a807a805787f8d049ae5617117068635133f74.jpg)
 
-参考的blog   https://github.com/Irving-cl/Irving-cl.github.io 作者公司的一位前辈
-参考的文档1 https://pages.github.com (英文文档很关键，git官方文档)
-参考的文档2 http://wowubuntu.com/markdown/#link（markdown相关语法）
-参考的文档3 https://www.jekyll.com.cn/docs/posts/ （jekyll文档）
-参考的文档5 https://help.github.com/articles/using-jekyll-as-a-static-site-generator-with-github-pages/（jeky with blog）
-听说经常撸管有三个毛病，1，话说不全。2，数总数查的不对。3，
+- 参考的blog   https://github.com/Irving-cl/Irving-cl.github.io 作者公司的一位前辈
+- 参考的文档1 https://pages.github.com (英文文档很关键，git官方文档)
+- 参考的文档2 http://wowubuntu.com/markdown/#link（markdown相关语法）
+- 参考的文档3 https://www.jekyll.com.cn/docs/posts/ （jekyll文档）
+- 参考的文档5 https://help.github.com/articles/using-jekyll-as-a-static-site-generator-with-github-pages/（jeky with blog）
+### 听说经常撸管有三个毛病，1，话说不全。2，数总数查的不对。3，
