@@ -1,10 +1,10 @@
 # github jekyll配置blog
 ##  一。安装相关软件
-- ruby	sudo apt-get install ruby
-- ruby-dev	sudo apt-get install ruby-dev
-- jekyll	sudo gem install jekyll
-- bundler	sudo gem install bundler
-- nodejs	sudo apt-get install nodejs
+- sudo apt-get install ruby
+- sudo apt-get install ruby-dev
+- sudo gem install jekyll
+- sudo gem install bundler
+- sudo apt-get install nodejs
 - 对于其他gems	可以尝试bundle update更新gems包
 ## 二。github账号
 - 有一个自己的github账号
