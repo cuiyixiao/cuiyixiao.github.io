@@ -1,7 +1,7 @@
 # 2017-12-15
 ##### 条款一，视c++为一个语言联邦。
 - c，object-oriented c++ ， template c++， stl
-c++高效编程守则视情况而变化，取决使用c++的哪一部分
+- c++高效编程守则视情况而变化，取决使用c++的哪一部分
 ##### 条款二，尽量以const，enum，inline代替#define
 - define使用的名称之前已被移走，并未进入记号表，所以用一个常量代替宏（const），string对象const往往比char*更加合适，例如consts char* const authorName = "Scott Meyers"可以定义成const std:: autorName(" Scott Meyers")
 - define只要被定义，其后的编译过程中有效，没有所谓的private #define，意味着define不能完成封装，enum行为来说比较像define，例如取一个const地址是合法的，但取一个enum地址就不合法，enum可以实现不让指针和引用指向某个常数变量，enum和define不会导致非必要的内存分配。
