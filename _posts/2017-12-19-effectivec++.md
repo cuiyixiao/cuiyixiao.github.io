@@ -121,3 +121,17 @@ directory& tempdir()
 - 一个空类会默认生成copy构造函数，一个copy assignment操作符，一个析构函数，一个default构造函数
 - 如果已经声明了一个构造函数，编译器将不再为它创建default构造函数，
 - 要注意，一般而言，只有代码合法且证明它有意义编译器才会生出operator = （比如&，const就会出现问题）
+
+##### 条款六
+- 为驳回编译器自动提供的功能（例如条款五中），可将相应的成员函数声明为private并且不予实现，使用像uncopyble这样的base class也是一种做法。
+```cpp
+//例如
+class homeforsale{
+public:
+  ...
+private:
+  ...
+  homeforsale(const homeforsale& );
+  homeforsale& operator=(const homeforsale&);
+}
+```
