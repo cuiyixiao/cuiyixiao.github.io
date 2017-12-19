@@ -45,3 +45,73 @@ std::vector<int>::const_iterator //修饰的是迭代器的指向物，等同于
 - 将某些声明为const可帮助编译器侦测出错误的用法，const可被施加于任何作用域内的对象，函数参数，函数返回类型，成员函数本体。
 - 编译器强制实施bitwise constness,但你编写程序时应该使用“概念上的常量性”。
 - 当const和non-const成员函数有着实质等价的实现时，令non-const版本调用const版本可避免代码重复。
+##### 条款四，确定对象被使用前已先被初始化
+
+- 对于无任何成员的内置类型，进行手工初始化。
+```cpp
+int x=0;
+const char *text="A C-style string";
+double d;
+std::cin>>d;
+```
+- 确保每一个构造函数都将对象的每一个成员初始化
+```cpp
+abentry::abentry(const std::string& name, const std::string& address, const std::List<phonenumber>& phones)
+:thename(name),
+   theaddress(address),
+     thephones(phones), 
+        numtimesconsulted(0)
+{}
+//使用成员初值列代替赋值动作，如果成员变量是引用和const一定要初值，不能赋值。
+```
+- c++对定义与不同的编译单元内的non-local static对象的初始化相对次序并无明确的定义。
+```cpp
+//互联网上的文件看上去位于本机的程序，象征单一文件系统
+class filesystem{
+  public:
+    ...
+    std::size_t numdisks() const;
+    ...
+}
+extern filesystem tfs;
+```
+
+```cpp
+class directory
+{
+  public:
+    directory(params);
+    ....
+};
+directory::directory(params)
+{
+  ....
+  std::size_t disks = tsf.numdisks();
+  ....
+}
+directory tempdir(params)
+//无法确定tfs在tempdir之前被初始化。
+```
+
+singletion设计模式解决
+```cpp
+//将non-local static对象搬到自己的专属函数内，这些函数返回一个引用指向它所含的对象
+//然后用户调用这些函数，而不直接指涉这些对象。
+class filesystem{....};
+filesystem tfs()
+{
+  static filesystem fs;
+  return fs;
+}
+class directory{...}
+directory& tempdir()
+{
+  static directory td;
+  return td;
+}
+```
+
+总结:
+- 对内置型对象进行手工操作初始化，因为c++不保证初始化它们。
+- 构造函数最好使用成员初值列，而不要在构造函数本体内使用赋值操作，初值列列出的成员变量，其排列次序应该和它们在class中的声明次序相同。
+- 为免除“跨编译单元之初始化次序”问题，轻易local static对象替换non-local static对象。
