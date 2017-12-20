@@ -135,3 +135,21 @@ private:
   homeforsale& operator=(const homeforsale&);
 }
 ```
+
+##### 条款7，为多态基类声明virtual函数
+- c++明确指出，当派生类对象经由一个基类对象指针被删除时，而该基类对象带着一个non-virtual析构函数，其执行时的结果是derived成分没被销毁
+- 当class不被当做base class的时候，不可以将析构函数作为virtual
+- 当class内含有至少一个virtual函数时，才为它声明virtual析构函数（心得）
+- 标准string，还有stl等等都是不带virtual（不企图让你将它们当做base class，不要尝试去做）
+- 当抽象类没有没有任何pure virtual函数时，可以将析构函数声明为pure virtual函数。
+```cpp
+class awov{
+public:
+    virtual ~awov()=0;
+}
+awov::~awov(){}//必须为其提供一份定义
+```
+总结:
+- 带有多态性质的base classes应该为其声明一个virtual析构函数，如果class带有任何virtual函数，它应该拥有一个virtual析构函数
+- classes的设计目的如果不是作为base classes使用，或不是为了具备多态性，就不该声明virtual函数
+
