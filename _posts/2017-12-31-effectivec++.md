@@ -227,6 +227,7 @@ public:
 };
 ```
 - 同时也适用于所有赋值相关操作
+
 总结:
 - 令赋值操作符返回一个refrence to *this
 
@@ -244,6 +245,7 @@ widget& widget::operator=(const widget& rhs)
 ```
 - 其实让operator =具备异常安全性往往自动获得自我赋值安全的回报
 - 可以使用copy and swap技术，就是拷贝一次后交换（ps:作者比较忧虑这种做法）
+
 总结:
 - 确保当前对象自我赋值时operator=有良好的行为，其中技术包括比较来源对象和目标对象地址，精心周到的语句顺序，以及copy-and-swap。
 - 确定任何函数如果操作一个以上的对象，而其中多个对象是同一个对象时，其行为仍然正确。
@@ -252,6 +254,7 @@ widget& widget::operator=(const widget& rhs)
 - 如果为class添加一个成员变量时，要同时修改copying函数，构造函数，operator=函数。
 - 应该让derived class的copying函数调用相应的base class函数（初始化列表）。
 - 不该令copy assignment操作符调用copy构造函数，相反也一样
+
 总结:
 - copying函数应该确保复制对象内的所有成员变量及所有base class成分。
 - 不要尝试copying函数实现另一个copying函数，应该将共同技能放进第三个函数中，并由两个copying函数共同调用。
