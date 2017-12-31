@@ -89,7 +89,8 @@ a {
 .page-header {
   color: $header-heading-color;
   text-align: center;
-  background-image: url(https://timgsa.baidu.com/timg?image&quality=80&size=b9999_10000&sec=1513767545124&di=2ae43b86f82982c6c1a86b4ba3c4bac4&imgtype=0&src=http%3A%2F%2Fc.hiphotos.baidu.com%2Fimage%2Fpic%2Fitem%2F908fa0ec08fa513dfc181433376d55fbb3fbd9a9.jpg)
+  background-color: $header-bg-color;
+  background-image: linear-gradient(120deg, $header-bg-color-secondary, $header-bg-color);
 
   @include large {
     padding: 5rem 6rem;
