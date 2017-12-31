@@ -117,12 +117,12 @@ directory& tempdir()
 - 构造函数最好使用成员初值列，而不要在构造函数本体内使用赋值操作，初值列列出的成员变量，其排列次序应该和它们在class中的声明次序相同。
 - 为免除“跨编译单元之初始化次序”问题，轻易local static对象替换non-local static对象。
 
-##### 条款五
+##### 条款五，了解c++默默编写了哪些函数
 - 一个空类会默认生成copy构造函数，一个copy assignment操作符，一个析构函数，一个default构造函数
 - 如果已经声明了一个构造函数，编译器将不再为它创建default构造函数，
 - 要注意，一般而言，只有代码合法且证明它有意义编译器才会生出operator = （比如&，const就会出现问题）
 
-##### 条款六
+##### 条款六，若不想使用编译器自动生成的函数，就该明确拒绝
 - 为驳回编译器自动提供的功能（例如条款五中），可将相应的成员函数声明为private并且不予实现，使用像uncopyble这样的base class也是一种做法。
 ```cpp
 //例如
@@ -136,7 +136,7 @@ private:
 }
 ```
 
-##### 条款7，为多态基类声明virtual函数
+##### 条款七，为多态基类声明virtual函数
 - c++明确指出，当派生类对象经由一个基类对象指针被删除时，而该基类对象带着一个non-virtual析构函数，其执行时的结果是derived成分没被销毁
 - 当class不被当做base class的时候，不可以将析构函数作为virtual
 - 当class内含有至少一个virtual函数时，才为它声明virtual析构函数（心得）
@@ -153,3 +153,105 @@ awov::~awov(){}//必须为其提供一份定义
 - 带有多态性质的base classes应该为其声明一个virtual析构函数，如果class带有任何virtual函数，它应该拥有一个virtual析构函数
 - classes的设计目的如果不是作为base classes使用，或不是为了具备多态性，就不该声明virtual函数
 
+##### 条款八，别让异常逃离析构函数
+- c++并不禁止析构函数吐出异常，但它并不鼓励你那样做
+- 可以用以下方法将析构中异常责任转移给用户
+```cpp
+//例如数据库的关闭
+class dbconn{
+public:
+  void close()
+  {
+    db.close();
+    closed = true;
+  }  
+ ~dbconn()
+  {
+    if(!closed)
+    {
+      try{
+        db.close();
+      }
+      catch(...){
+        ...
+      }
+    }
+  }
+private:
+  DBConnection db;
+  bool closed;
+}
+```
+总结:
+- 析构函数绝对不要吐出异常。如果一个被析构函数调用的函数可能抛出异常，析构函数应该捕捉任何异常，然后吞下它们或结束程序。
+- 如果客户需要对某个操作函数运作期间抛出的异常做出反应，那么class应该提供一个普通函数（而非在析构函数中）执行该操作。
+
+##### 条款九，绝不在构造和析构函数中调用virtual函数
+- 在base class构造期间，virtual函数不是virtual函数。
+- 可以令derived classes将必要的构造信息向上传递至base class构造函数
+```cpp
+class transaction{
+  explicit transaction(const std::string &loginfo);
+  void logtransaction(const std::string &loginfo);
+  ...
+};
+transaction::transaction(const std::string &loginfo)
+{
+  ...
+  logtransaction(loginfo)
+}
+class buytransaction::public transaction{
+public:
+  buytransaction(parameters)
+    : transaction(createlogstring(parameters))
+    {...}
+...
+private:
+  static std::string createlogstring(parameters);
+}
+```
+总结：
+- 在构造和析构期间不要调用virtual函数，因为这类调用从不降至derived class。
+
+##### 条款十，令operator=返回一个refrence to *this
+- 赋值操作符必须返回一个reference指向操作符的左侧实参。
+```cpp
+class widget{
+public:
+  widget& operator= (const widget& rhs)
+  {
+    ...
+    return rhs;
+  }
+ ...
+};
+```
+- 同时也适用于所有赋值相关操作
+总结:
+- 令赋值操作符返回一个refrence to *this
+
+##### 条款十一，在operator=中处理“自我赋值” 
+- 防止自我赋值，出传统做法是加证同测试，达到自我赋值的验证目的。
+```cpp
+widget& widget::operator=(const widget& rhs)
+{
+  if(this == &rhs)return *this;//证同测试
+  
+  delete pd;
+  pd = new bitmap(*rhs.pd);
+  return thisl
+}
+```
+- 其实让operator =具备异常安全性往往自动获得自我赋值安全的回报
+- 可以使用copy and swap技术，就是拷贝一次后交换（ps:作者比较忧虑这种做法）
+总结:
+- 确保当前对象自我赋值时operator=有良好的行为，其中技术包括比较来源对象和目标对象地址，精心周到的语句顺序，以及copy-and-swap。
+- 确定任何函数如果操作一个以上的对象，而其中多个对象是同一个对象时，其行为仍然正确。
+
+##### 条款十二，复制对象时勿忘其每一个成分。
+- 如果为class添加一个成员变量时，要同时修改copying函数，构造函数，operator=函数。
+- 应该让derived class的copying函数调用相应的base class函数（初始化列表）。
+- 不该令copy assignment操作符调用copy构造函数，相反也一样
+总结:
+- copying函数应该确保复制对象内的所有成员变量及所有base class成分。
+- 不要尝试copying函数实现另一个copying函数，应该将共同技能放进第三个函数中，并由两个copying函数共同调用。
