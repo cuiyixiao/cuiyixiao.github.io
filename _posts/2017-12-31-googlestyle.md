@@ -6,15 +6,18 @@
 - 将模板和内联函数的定义放到一个文件中作为它们的声明 ，并包含在每个使用他们的.c文件中
 - 不要把定义放在头文件中。
 - the #define guide保护头文件foo/src/bar/baz.h
+
 ```cpp
 #ifndef FOO_BAR_BAZ_H_
 #define FOO_BAR_BAZ_H_
 ...
 #endif //FOO_BAR_BAZ_H_
 ```
+
 - 避免使用向前声明。
 - 定义内联函数只可以在它们很小，10行或者更小
 - Names and Order of Includes
+
 ```
     dir2/foo2.h.
     C system files.
@@ -27,6 +30,7 @@
 ### namespaces
 - 将代码尽可能的放到命名空间里，不要使用using，不要使用内联namespace
 - 可以防止全局内命名冲突
+
 ```cpp
 // In the .h file
 namespace mynamespace {
@@ -41,12 +45,14 @@ class MyClass {
 
 }  // namespace mynamespace
 ```
+
 ### Unnamed Namespaces and Static Variables
 - 在不需要别处引用的定义，将它们放到未命名的命名空间或者声明为静态。
 ### Nonmember, Static Member, and Global Functions
 - 尽量用命名空间分组函数而不是类
 - 尽量在namespace里用非成员函数而不是全局函数
 - 静态成员函数尽量写成非成员函数，如下
+
 ```cpp
 namespace myproject {
 namespace foo_bar {
@@ -55,7 +61,9 @@ void Function2();
 }  // namespace foo_bar
 }  // namespace myproject
 ```
+
 intead of
+
 ```cpp
 namespace myproject {
 class FooBar {
@@ -65,10 +73,12 @@ class FooBar {
 };
 }  // namespace myproject
 ```
+
 ### Local Variables
 - 将函数变量放在尽可能窄的范围
 - 声明变量尽可能接近第一次使用
 - 声明时就应初始化，如下
+
 ```cpp
 int i;
 i = f();      // Bad -- initialization separate from declaration.
@@ -81,6 +91,7 @@ v.push_back(2);
 
 std::vector<int> v = {1, 2};  // Good -- v starts initialized.
 ```
+
 ### Static and Global Variables
 - 禁止静态类变量(why.....)
 - 考虑使用指针代替（且不能是智能指针）
@@ -96,6 +107,7 @@ std::vector<int> v = {1, 2};  // Good -- v starts initialized.
 ###Copyable and Movable Types
 - 如果复制和移动没有有明确的意义应当禁用隐式生成的复制和移动特殊函数
 - 请一起提供copy和move函数
+
 ```cpp
 class Foo {
  public:
@@ -105,6 +117,7 @@ class Foo {
  private:
   Field field_;
 };
+
 ```
 ### Structs vs. Classes
 - struct用于数据集和，不会提供数据行为（除了初始化和析构），无需通过函数访问，否则其它一律用类。
@@ -130,16 +143,20 @@ class Foo {
 ### Reference Arguments
 - 引用标记的参数须声明为const
 - 输入参数是值或const引用，输出参数是指针
+
 ```cpp
 void Foo(const string &in, string *out);
 ```
+
 ### Default Arguments
 - 默认参数在虚函数上禁用
 ### Trailing Return Type Syntax
 - 普通语法函数不使用尾随返回类型
+
 ```cpp
 int foo(int x);
 ```
+
 - 返回模板参数或者lambada表达式参数时使用尾随返回类型
 
 ```cpp
