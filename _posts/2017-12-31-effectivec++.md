@@ -258,3 +258,117 @@ widget& widget::operator=(const widget& rhs)
 总结:
 - copying函数应该确保复制对象内的所有成员变量及所有base class成分。
 - 不要尝试copying函数实现另一个copying函数，应该将共同技能放进第三个函数中，并由两个copying函数共同调用。
+
+##### 条款十三，以对象管理资源
+- 因为抛出异常或者提前return的情况可能会使申请的资源无法释放
+```cpp
+void f()
+{
+  investment *pinv = createinvestment();//工厂模式
+  ...//在这里出现异常或者return的话，资源无法释放
+  delete pinv;
+}
+```
+
+- 为避免这种情况，可以使用智能指针，。
+- 以对象管理资源的两个思想，获得资源后立刻放进管理对象（构造函数），管理对象运用析构函数确保资源被释放。
+- auto_ptr和shared_ptr两者在析构函数内是delete，而不是delete[]。
+总结:
+- 为防止资源泄露，请使用RAII对象，它们在构造函数中获得资源并在析构函数中释放资源。
+- 两个常被使用的RAII classes分别是tr1::shared_ptr和auto_ptr.前者通常是较佳的选择，因为其copy行为比较直观，若选择auto_ptr，复制动作会使它（被复制物物）指向null
+
+##### 条款十四，在资源管理类中小心copying行为
+- 当一个RAII class 对象被复制时我们可以:
+- 我们可以禁止复制，将copying声明为private。
+- 对底层资源用引用计数，可以使用shared_ptr。
+
+```cpp
+class Lock
+{
+public:
+  explicit lock(mutex *pm)
+      :mutexptr(pm, unlock)
+  {
+    lock(mutexptr.get());
+  }
+private:
+  stdd::tr1::shared_ptr<mutex>mutexptr;
+}
+```
+
+- 复制底部资源，即进行深度拷贝。
+- 转移底部资源，可以看做auto_ptr的行为
+
+总结:
+- 复制RAII对象必须一并复制它所管理的资源，所以资源的copying行为决定RAII对象的copying行为。
+- 普遍而唱见的RAII class copying行为是:抑制copying，施行引用计数法。不过其他行为也可能被实现。
+
+##### 条款十五，在资源管理器类中提供对原始资源的访问。
+- tr1::shared_ptr和auto_ptr都提供了一个get成员函数，可以返回其中的内部原始指针，条款十三中的工厂模式，必须同样返回类型也要是RAII，所以我们可以这样调用
+```cpp
+//显式转换
+std::tr1::shared_ptr<investment>pint(createinvestment);
+int days = datsheld(pinv.get());
+```
+
+- 这两个智能指针也重载了->和*操作符，可以隐式转换至底部原始指针。
+- 有时候必须取得RAII对象内的原始资源，做法是提供一个隐式转换函数。
+```cpp
+//显式转换
+class font{
+public:
+  ...
+  fonthandle get() const{ return f; }
+}
+```
+
+```cpp
+//隐式转换
+class font{
+public:
+  ...
+  operator fonthandle() const
+  { return f; }
+}
+```
+
+- 显式转换的优点是防止被误用，而隐式转换的优点是用起来比较自然
+
+总结:
+- apis往往要求访问原始资源，所以每一个RAII class应该提供一个“取得其所管理之资源”的方法。
+- 对原始资源的访问可能经由显式转换或隐式转换。一般而言显式转换比较安全，但隐式转换对客户比较方便。
+
+##### 条款十六，成对使用new和delete时要采取相同的形式。
+- 如果调用new，则必须对应调用delete，如果调用new[]，则必须对应调用delete[]。
+- 注意一下用法
+
+```cpp
+typedef std::string addresslines[4];
+
+std::string *pal = new addresslines;
+
+delete pal;//行为未定义
+delete pal[];//很好
+```
+
+总结:
+- 如果你在new表达式中使用[]。必须在相应的delete中也使用[]，如果在new表达式中没有使用[]，一定不要在相应的delete中使用[]。
+
+##### 条款十七，以独立语句将newed对象置入智能指针
+- c++编译器调用参数时顺序是不固定的。
+
+```cpp
+process (std::str1::shared_ptr<widget>(new widget), priority())
+/*
+如果是下列执行顺序
+1，调用new
+2，调用priority
+3，调用智能指针构造函数
+如果第二步出现问题可能会导致资源泄露
+*/
+```
+
+- 避免上述问题很简单，使用分离语句，在单独语句内调用std::str1::shared_ptr<widget>(new widget)即可
+
+总结:
+- 以独立语句将newed对象存储于智能指针内，如果不这样做，一旦异常被抛出，有可能导致难以察觉的资源泄露。
