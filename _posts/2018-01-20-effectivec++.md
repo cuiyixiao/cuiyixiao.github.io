@@ -372,3 +372,248 @@ process (std::str1::shared_ptr<widget>(new widget), priority())
 
 总结:
 - 以独立语句将newed对象存储于智能指针内，如果不这样做，一旦异常被抛出，有可能导致难以察觉的资源泄露。
+
+##### 条款十八，让接口容易被正确使用，不易被误用
+- 导入外覆类型
+```cpp
+struct day{
+  explicit day(int d):val(d){ }
+  int val;
+}
+struct month{
+  explicit month(int m):val(m){ }
+  int val;
+}
+struct year{
+  explicit year(int y):val(y){ }
+  int val;
+}
+class data{
+public:
+  data(const month&m const day&d, const year&y)    
+};
+data d(month(3),day(30),year(1995));
+```
+
+- 尽量令你的type行为与内置的type一样（例如STL接口十分一致）。
+- 令factory返回智能指针shared_ptr
+- share_ptr比正常的指针大且慢，而且使用辅助动态内存。
+- DLL问题即对象在动态链接程序库中被new创建，却在另一个DLL内被delete。shared_ptr会追踪记录引用次数，不会出现这种问题。
+- 如果我们期许将一个工厂返回的指针放到另一个函数去删除，那么应该将另一个函数直接绑定。
+```cpp
+std::tr1::shared_ptr<investment>
+  pinv(static_cast<investment*>(0)),
+    getridofinvestment);
+```
+
+总结:
+- 好的接口很容易被正确使用，不容易被误用，你应该在你所有接口中努力达成这些性质
+- “促进正确使用”的方法包括接口的一致性，以及与内置类型的行为兼容
+- “阻止误用”的办法包括建立心累系女，限制类型上的操作，束缚对象值，以及消除客户资源管理的责任。
+- tr1::shared_ptr支持定制删除器，可以防范DLL问题，可被用来自动解除互斥锁等等。
+
+##### 条款十九，设计class犹如type
+
+- 新type的对象应该如何被创建和销毁？（第八章）
+- 初始化和赋值决定了构造函数和赋值操作符的行为，不要弄混对象的初始化和对象的赋值，因为它们应该在不同的函数调用（条款4）
+- copy构造函数用来定义一个type的pass-by-value该如何实现。
+- 对class的成员的变量而言，通常只有某些数值集是有效的，决定了成员函数必须要进行错误检查工作。
+- 如果继承自某些既有的classes，那么就会受到那些classes的设计的束缚。
+- 如果允许类型t1对象被隐式转换成t2对象，就必须在t1内写一个类型转换函数或在t2中写一个可被单一实参调用的构造函数。
+- 注意哪些声明为member函数和non-member函数。
+- 注意应该驳回哪些标准函数，应把它声明为private。
+- 注意哪个成员声明为public，private，protect。
+- 如果定义非一个新type而是一整个type家族，那就应该定义一个新的class template
+- 如果只是为了既有的class添加机能，说不定多定义一个non-member或empletes，更能达到目标
+
+总结:
+- class的设计就是type的设计，在定义一个新type之前，请确定已经考虑过本条所覆盖的所有内容。
+
+##### 条款二十，宁以pass-by-reference-to-const替换pass-by-value
+- pass-by-value会通过copy构造函数创建副本，并且函数结束后会析构，而pass-by-reference-to-const，reference底层是通过指针实现的，因此往往通常意味着真正传递的指针，而通过const不会担心值被改变，效率会高很多
+- 以by reference方式传递也可以避免对象切割问题，直接上例子
+```cpp
+class window{
+public:
+  std::string name()const;
+  virtual void display()const;
+}
+class windowwithscrollbars::public window{
+public:
+  ...
+  virtual void display()const;
+}
+
+void PrintNameAndDisplay(window w)//参数可能被切割。
+{
+}
+windowwithscrollbars wwsb;
+PrintNameAndDisplay(wwsb);
+//参数wwsb会被构造成一个window对象，继承下来的信息会被全部切除，
+//而pass by reference就不会出现这种问题。
+```
+
+- 内置类型应该pass by value
+
+总结
+- 尽量以pass-by-reference-to-const替换pass-by-value。前者通常比较高效，并可以避免切割问题
+- 以上规则并不适用于内置类型，以及STL迭代器和函数对象，对他们而言pass by value往往比较恰当。
+
+##### 条款二十一：必须返回对象时，别妄想返回其reference
+- 绝对不要返回pointer或reference指向一个local stack对象，或返回reference指向一个heap-allocated对象，或返回pointer或reference指向一
+个local static对象而有可能同时需要对个这样的对象。
+总结:
+- 这个我懂
+
+##### 条款二十三，宁以non-member，non-friend替换member函数
+- 尽量用non-member替换member函数，例如
+```cpp
+class webborwser{
+public:
+  ...
+  void clearcachhe();
+  void clearhistory();
+  void removecookies();
+  void cleareverything();//调用上面三个函数
+  ...
+}
+
+void cleareverything(webborwser &wb)
+{
+  wb.clearcache();
+  wb.clearhistory();
+  wb.removecookies();
+}
+```
+
+- 上述做法可以降低耦合度，增加可改变程度。
+- 越多的东西被封装，我们改变那些东西的能力也就越大
+- 越多的函数可以访问成员变量，那么封装性就越差,所以non-member,non-friend函数封装性更好，因为它们没有增加能够访问class中private成分的函数的数量
+- 让函数成为class的non-member并不意味它不可以是一个class的member。c++做法是让non-member函数和class位于同一个namespace里
+```cpp
+namespace webbrowserstuff{
+  class webbrowser{...}
+  void clearborwser(webbrowser &wb);
+}
+```
+
+- friend函数对class private成员的访问权利和member函数相同。
+- 标准程序库并不是拥有单一，整体，庞大的<c++StandardLibrary>头文件并在其中内涵std命名空间内的每一样东西，而是有数十个头文件，每个头文件生命std的某些技能，我们设计也当如此，如下：
+```cpp
+namespace webbrowserstuff{
+  class webbrowser{...};      //核心机能，几乎所有客户都需要
+    ...           //non-member函数 
+}
+namespace webbrowserstuff{
+    ...//书签相关便利函数
+}
+namespace webbrowserstuff{
+      ...cookie相关便利函数
+}
+```
+总结:
+- 宁可拿non-member，non-friend函数替换member函数，这样做可以增加封装性，包裹弹性和机能扩充。
+
+##### 条款二十四，若所有参数皆需类型转换，请为此采用non-member函数
+- 在建立数值类型时，应当令class支持隐式类型转换。
+- 例如虚数运算，我们在重载乘法时，应当考虑将两个参数全部支持隐式转换，而不能支持一个，例如乘法交换律
+```cpp
+result = 2*onehalf; //无法通过编译
+```
+
+- 让operation成为一个non-member函数就可以允许编译器在每一个实参上执行隐式类型转换。
+```cpp
+class rational{
+  ...
+};
+const rational operator*(const rational& lhs, const rational& rhs){
+  ...
+}
+rational result
+rational onefourth(1,4);
+result = 2*onefourth      //可通过编译
+
+```
+
+- 不能只因为函数不该成为member，就自动让它成为friend。
+
+总结:
+- 如果你需要为某个函数的所有参数进行类型转化，那么这个函数必须是non-member。
+##### 条款二十五：考虑写出一个不抛异常的swap函数
+- 标准库swap三次对象赋值。
+- 置换下列代码，我们只需置换其pimpl指针，swap效率低下。 
+```cpp
+class widgetimpl{
+public:
+  ...
+private:
+  int a,b,c;
+  std::vector<double>v
+}
+class widget{
+public:
+  widget(const widget& rhs);
+  widget& operator=(const widget& rhs)
+  {
+    ...
+    *pimpl = *(rhs.pimpl);
+    ...
+  }
+  ...
+private:
+  widgetimpl* pimpl;
+}
+
+- 可以令widget声明一个名为swap的public成员函数做真正的置换工作，然后std::swap特化。
+```cpp
+class widget{
+public:
+  ...
+  void swap(widget& other)
+  {
+    using std::swap;
+    swap(pimpl,other, pimpl);
+  }
+  ...
+};
+namespace std{
+  template<>         //修订后的swap特化版本
+  void swap<widget>(widget& a, widget& b)     
+  {
+    a.swap(b);
+  }
+}
+```
+
+- c++只允许对class templates偏特化，而function templates身上偏特化是行不通的。 如果打算偏特化一个funciont templates时，通常做法是简单的为它添加一个重载模板。
+- 请不要添加任何新东西到std里头
+- 如果widget和widgetimpl都是class templates，可以声明一个non-member swap调用memberswap，不将non-member swap声明为std::swap的特化版本或重载版本。
+```cpp
+namespace widgetstuff{
+  temlate<typename T>
+  class widget{...};
+ ...
+  template<typename T>
+  void swap(widget<T>&a,
+                   widget<T>&b)
+  {
+    a.swap(b);
+  }
+}
+```
+
+- c++的名称查找法则确保将找到global作用域或T所在之命名空间内的任何T专属的swap，如果没有，则用std内的swap。
+- 如果swap效率不足，试着做一下事情：
+```
+1，提供一个public swap成员函数，让它高效的置换你的类型的两个对象值，这个函数绝对不能抛出异常。
+2，在你的class或template所在的命名空间内提供一个non-member swap，并令它调用上述swap函数。
+3，如果你正在编写一个class，为你的class特化std::swap。并令它调用你的swap函数
+```
+
+- 如果调用swap，确定包含一个using声明式，以便让std::swap在你的函数内曝光可见。让后不加任何修饰符，直接swap。
+
+总结:
+- 当std::swap对你的类型效率不高时，提供一个swap函数，并确定这个函数不抛出异常。
+- 如果你提供一个member swap，也该提供一个non-member swap用来调用前者，对classes（非templates），也请特化std::swap。
+- 调用swap时应针对std::swap使用using声明式，然后调用swap并不带任何命名空间修饰
+- 为用户类型进行std templates全特化是好的，但千万不要尝试在std内加入对std而言全新的东西
