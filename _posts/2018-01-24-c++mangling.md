@@ -22,7 +22,8 @@ namespace wikipedia
 class article 
 {
 public:
-       std::string format (void);      /* = _ZN9wikipedia7article6formatEv */            //开头为_Z，嵌套N，接下来的标示符字数9，以此类推          bool print_to (std::ostream&);  /* = _ZN9wikipedia7article8print_toERSo */
+       std::string format (void);      /* = _ZN9wikipedia7article6formatEv */   //开头为_Z，嵌套N，接下来的标示符字数9，以此类推
+       bool print_to (std::ostream&);  /* = _ZN9wikipedia7article8print_toERSo */
        class wikilink 
        {
        public:
