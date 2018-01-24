@@ -1,6 +1,6 @@
 # c++ mangling
-- mangling¼´ÎªÁËÊ¹½á¹¹Ìå£¬Êı¾İ½á¹¹£¬Àà£¬º¯ÊıµÈÍ¨¹ıÁ´½ÓºÍ±àÒë£¬¶øÌí¼ÓÒ»Ğ©¶îÍâµÄĞÅÏ¢¡£
-- ¼òµ¥Àı×Ó
+- manglingå³ä¸ºäº†ä½¿ç»“æ„ä½“ï¼Œæ•°æ®ç»“æ„ï¼Œç±»ï¼Œå‡½æ•°ç­‰é€šè¿‡é“¾æ¥å’Œç¼–è¯‘ï¼Œè€Œæ·»åŠ ä¸€äº›é¢å¤–çš„ä¿¡æ¯ã€‚
+- ç®€å•ä¾‹å­
 ```cpp
 int  f (void) { return 1; }
 int  f (int)  { return 0; }
@@ -15,30 +15,24 @@ int  __f_i (int)  { return 0; }
 void __g_v (void) { int i = __f_v(), j = __f_i(0); }
 ```
 
-- ¸´ÔÓÀı×Ó
+- å¤æ‚ä¾‹å­
 ```cpp
 namespace wikipedia 
 {
-       class article 
-          {
-                 public:
-                       std::string format (void); 
-                                /* = _ZN9wikipedia7article6formatEv */                //¿ªÍ·Îª_Z£¬Ç¶Ì×N£¬½ÓÏÂÀ´µÄ±êÊ¾·û×ÖÊı9£¬ÒÔ´ËÀàÍÆ
-
-                                      bool print_to (std::ostream&); 
-                                               /* = _ZN9wikipedia7article8print_toERSo */
-
-                                                     class wikilink 
-                                                           {
-                                                                     public:
-                                                                              wikilink (std::string const& name);
-                                                                                          /* = _ZN9wikipedia7article8wikilinkC1ERKSs */
-                                                                                                };
-                                                                                                   };
+class article 
+{
+public:
+       std::string format (void);      /* = _ZN9wikipedia7article6formatEv */            //å¼€å¤´ä¸º_Zï¼ŒåµŒå¥—Nï¼Œæ¥ä¸‹æ¥çš„æ ‡ç¤ºç¬¦å­—æ•°9ï¼Œä»¥æ­¤ç±»æ¨          bool print_to (std::ostream&);  /* = _ZN9wikipedia7article8print_toERSo */
+       class wikilink 
+       {
+       public:
+              wikilink (std::string const& name);       /* = _ZN9wikipedia7article8wikilinkC1ERKSs */
+       };
+};
 }
 ```
 
-- ´¦Àíc·ûºÅÁ´½Óµ½c++
+- å¤„ç†cç¬¦å·é“¾æ¥åˆ°c++
 The job of the common C++ idiom:
 ```cpp
 #ifdef __cplusplus 
@@ -50,33 +44,31 @@ extern "C" {
 #endif
 ```
 
-cÓïÑÔ¶¨ÒåÊÇunmangling£¬c++±àÒëÊ±ĞèÒª±ÜÃâÖØĞÂmangling
+cè¯­è¨€å®šä¹‰æ˜¯unmanglingï¼Œc++ç¼–è¯‘æ—¶éœ€è¦é¿å…é‡æ–°mangling
 
-ÀıÈç:
+ä¾‹å¦‚:
 ```cpp
 #ifdef __cplusplus
 extern "C" {
 #endif
-
     void *memset (void *, int, size_t);
     char *strcat (char *, const char *);
     int   strcmp (const char *, const char *);
     char *strcpy (char *, const char *);
-
 #ifdef __cplusplus
 }
 #endif
 
 if (strcmp(argv[1], "-x") == 0) 
-        strcpy(a, argv[2]);
-        else 
-                memset (a, 0, sizeof(a));
-                ```
+   strcpy(a, argv[2]);
+else 
+   memset (a, 0, sizeof(a));
+```
 
-                uses the correct, unmangled strcmp and memset. If the extern had not been used, the (SunPro) C++ compiler would produce code equivalent to:
-                ```cpp
-                if (__1cGstrcmp6Fpkc1_i_(argv[1], "-x") == 0) 
-                        __1cGstrcpy6Fpcpkc_0_(a, argv[2]);
-                        else 
-                                __1cGmemset6FpviI_0_ (a, 0, sizeof(a));
-                                ```
+uses the correct, unmangled strcmp and memset. If the extern had not been used, the (SunPro) C++ compiler would produce code equivalent to:
+```cpp
+if (__1cGstrcmp6Fpkc1_i_(argv[1], "-x") == 0) 
+        __1cGstrcpy6Fpcpkc_0_(a, argv[2]);
+ else 
+       __1cGmemset6FpviI_0_ (a, 0, sizeof(a));
+```
