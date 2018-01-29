@@ -575,6 +575,8 @@ private:
 }
 
 - 可以令widget声明一个名为swap的public成员函数做真正的置换工作，然后std::swap特化。
+```
+
 ```cpp
 class widget{
 public:
