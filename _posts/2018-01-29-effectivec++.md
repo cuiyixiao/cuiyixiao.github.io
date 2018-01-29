@@ -432,6 +432,7 @@ std::tr1::shared_ptr<investment>
 ##### 条款二十，宁以pass-by-reference-to-const替换pass-by-value
 - pass-by-value会通过copy构造函数创建副本，并且函数结束后会析构，而pass-by-reference-to-const，reference底层是通过指针实现的，因此往往通常意味着真正传递的指针，而通过const不会担心值被改变，效率会高很多
 - 以by reference方式传递也可以避免对象切割问题，直接上例子
+
 ```cpp
 class window{
 public:
@@ -516,15 +517,15 @@ namespace webbrowserstuff{
 
 ##### 条款二十四，若所有参数皆需类型转换，请为此采用non-member函数
 - 在建立数值类型时，应当令class支持隐式类型转换。
-- 例如虚数运算，我们在重载乘法时，应当考虑将两个参数全部支持隐式转换，而不能支持一个，例如乘法交换律
-```cpp
+- 例如虚数运算，我们在重载乘法时，应当考虑将两个参数全部支持隐式转换，而不能支持一个，例如乘法交换律。
 
+```cpp
 result = 2*onehalf; //无法通过编译
 ```
 
 - 让operation成为一个non-member函数就可以允许编译器在每一个实参上执行隐式类型转换。
-```cpp
 
+```cpp
 class rational{
   ...
 };
