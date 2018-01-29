@@ -518,11 +518,13 @@ namespace webbrowserstuff{
 - 在建立数值类型时，应当令class支持隐式类型转换。
 - 例如虚数运算，我们在重载乘法时，应当考虑将两个参数全部支持隐式转换，而不能支持一个，例如乘法交换律
 ```cpp
+
 result = 2*onehalf; //无法通过编译
 ```
 
 - 让operation成为一个non-member函数就可以允许编译器在每一个实参上执行隐式类型转换。
 ```cpp
+
 class rational{
   ...
 };
@@ -543,6 +545,7 @@ result = 2*onefourth      //可通过编译
 - 标准库swap三次对象赋值。
 - 置换下列代码，我们只需置换其pimpl指针，swap效率低下。 
 ```cpp
+
 class widgetimpl{
 public:
   ...
