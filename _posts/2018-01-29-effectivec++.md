@@ -617,3 +617,223 @@ namespace widgetstuff{
 - 如果你提供一个member swap，也该提供一个non-member swap用来调用前者，对classes（非templates），也请特化std::swap。
 - 调用swap时应针对std::swap使用using声明式，然后调用swap并不带任何命名空间修饰
 - 为用户类型进行std templates全特化是好的，但千万不要尝试在std内加入对std而言全新的东西
+
+##### 条款二十六，尽可能延后变量定义式的出现时间
+- 定义一个不使用的变量，可能会造成不必要的构造和析构成本。
+```cpp
+std::string encryptpassword(const std::string &password)
+{
+  using namespace std;
+  string encrypted;
+  if(password.length()<minimumpasswordlength)
+  {
+    throw logic_error("password is too short");
+  }
+  ...
+  return encrypted;
+}
+//上述代码如果丢出异常，那么encrypted就没有被使用，仍要付出构造和析构成本
+```
+
+```cpp
+std::string encryptpassword(const std::string &password)
+{
+  using namespace std;
+  if(password.length()<minimumpasswordlength)
+  {
+    throw logic_error("password is too short");
+  }
+  string encrypted(password);//初始化
+  ...
+  return encrypted;
+}
+//应当这么做
+```
+
+- 你不只应该延后变量的定义，直到非得使用该变量的前一刻为止。
+- 如果在循环内有两种做法，A，1构造+1个析构+n个赋值操作，B，n个构造+n个析构，第一个是在循环外，第二个是在循环内，当n很大时A好，否则B好。
+
+总结:
+- 尽可能的延后变量定义式出现的时间，这样做可增加程序的清晰度并改善程序效率。
+
+
+##### 条款二十七，尽量少做转型动作
+- c++提供四种类型的新式转型
+```
+const_cast<T>(expression)，通常被用来将对象的常量性移除。它也是唯一有此能力的c++style转型操作符
+dynamic_cast<T>(expression)，主要用来执行安全向下转型。
+reinterpret_cast<T>(expression)，执行低级转型，例如pointer to int转型为int。
+static_cast<T>(expression)，强迫隐式转型。
+```
+
+- 我们唯一使用旧型转型的时机是，当我要调用一个explicit构造函数将一个对象传递给一个函数时，例如:
+```cpp
+class widget{
+  public:
+    explicit widget(int size);
+    ...
+};
+void doSomeWork(const widget& W);
+doSomeWork(widget(15));
+```
+
+- 任何一个类型转换往往会使编译器编译出运行期间的代码。
+- 许多应用框架都要求derived classes内的virtual函数代码的第一个动作就先调用bass class的函数。但是会有问题
+```cpp
+class window{
+public:
+  virtual void onresize(){...}
+  ...
+class specialwindow:public window{
+public:
+  virtual void onresize(){
+    static_cast<window>(*this).onsize();//这里调用的并不是对象身上的函数，而是稍早转型动作所建立的一个*this对象之base class成分的暂时副本身上的onresize 
+    ...
+  }
+  ...
+};
+```
+- 如果想调用base class版本的onresize函数，请这么做：
+```cpp
+class specialwindow:public window{
+public:
+  virtual void onresize(){
+    window::onresize();
+  }
+}
+```
+
+- dynamic_cast的许多实现版本执行速度很慢，在注重效率时应注意
+- 当认定为derived class 对象身上执行derived class操作函数，但你的手上却只有一个指向base的pointer或refrence，可能想到需要dynamic_cast，有两种方法可以避免这种问题
+```cpp
+/*
+使用容器并在内存中直接指向derived class对象指针
+*/
+typedef std::vector<std::tr1::shared_ptr<specialwindow*> >vpsw;
+vpsw winptrs;
+...
+for(vpsw::iterator iter = winptrs.begin();iter!=winptrs.end();++iter)
+  (*iter)->blink();
+```
+
+```cpp
+/*
+通过base class接口处理所有可能之各种派生类，即在base class内提供virtual函数做你想对window派生类做的事
+*/
+class window{
+public:
+  virtual void blink(){}
+}
+class specialwindow::public window{
+public:
+  virtual void blink(){...};
+  ...
+};
+typedef std::vector<std::tr1::shared_ptr<specialwindow*> >vpsw;
+vpsw winptrs;
+...
+for(vpsw::iterator iter = winptrs.begin();iter!=winptrs.end();++iter)
+  (*iter)->blink();
+```
+
+- 应当避免一连串的dynamic_cast
+- 优良的c++代码很少使用转型，但是却无法摆脱它们
+
+总结:
+- 如果可以，尽量避免转型，特别时在注重效率的代码中避免dynamic_casts。如果有个设计需要转型，试着看无需转型的设计代替。
+- 如果转型是必要的，试着将它隐藏于某个函数背后，客户随后可以调用该函数而不需将转型放进他们自己的代码内
+- 宁可使用c++style新式，不要使用旧式。前者很容易辨别出来，而且也比较有着分门别类的职掌。
+
+##### 条款二十八，避免返回handles指向对象内部成分
+- 成员变量的封装性最多只等于返回其reference的函数的访问级别
+- 如果const成员函数传出一个reference，后者所指数据与对象自身有关联，而它又被存储于对象之外。
+- 返回一个对象内部数据的handle，随之带来的是降低对象封装性，还有会导致dangling（即指向的对象已经被虚构）
+
+总结：
+- 避免返回handles指向内部对象，遵守这条可增加封装性，帮助const成员函数行为像个const，并将发生虚吊的可能性降到最低
+
+##### 条款二十九，为异常安全而努力是值得的
+
+- 异常安全有两个条件，不泄露任何资源，不允许任何数据败坏。
+```cpp
+class prettymenu{
+public:
+  ...
+  void changebackground(std::iostream imgsrc);
+  ...
+private:
+  Mutex mutex;
+  Image *bgimage;
+  int imagechages;
+};
+void prettymenu changebackground(std::iostream imgsrc)
+{
+  lock(&mutex);
+  delete bgimage;
+  ++imagechanges;
+  bgimage = new image(imgsrc);
+  unlock(&mutex);
+}
+//如果new image出现异常，对unlock的调用就不会执行，于是互斥器就永远被把持住了
+//bgimage指向一个已被删除的对象，imagechages也已被累加，而其实并没有新的图像安装
+```
+
+- 防止第一个问题·可以用资源管理类，详情见条款十四
+- 异常安全函数提供一下三个保证之一,(异常安全码必须提供以下三种保证之一)
+```
+1，基本承诺，如果异常被抛出，程序内的任何事物仍然保持在有效状态下。
+2，强烈保证，如果异常被抛出，程序状态不改变。即如果函数调用失败，程序会回复到调用函数之前的状态
+3，不抛掷保证，承诺绝不抛出异常，因为它们总是能够完成它们原先承诺的功能。
+```
+
+- 可能的话请提供nothrow保证，但对于大部分函数而言，抉择往往落在基本保证和强烈保证之间
+- 上述代码解决办法，在bgimage上使用智能指针（详见条款十三），之后并改变语句次序，即确保更换完图像再累加
+```cpp
+class prettymenu{
+  ...
+  std::tr1::shared_ptr<Image>bgiamge;
+  ...
+}
+void prettymenu::changebackground(std::istream& imgsrc)
+{
+  Lock m1(&mutex);
+  bgimage.reset(new Image(imgsrc));
+  ++imagechanges;
+}
+```
+
+- 如果函数只操作局部性状态，相对容易提供强烈保证。
+- 应挑选现实可施作条件下最强烈的等级，只有函数调用了传统代码，才设为无保证。
+
+总结：
+- 异常安全函数即使发生异常也不会泄露资源或允许任何数据结构破坏，这样的函数区分为三种可能的保证：基本型，强烈型，不抛出异常型。
+- 强烈保证往往能够以copy-and-swap实现出来，但强烈保证并非对所有函数都可实现或具备现实意义。
+- 函数提供的异常安全保证通常最高只等于其所调用之各个函数的异常安全的最弱者
+
+##### 条款三十，透彻了解inlining的里里外外
+- 当inlining某个函数，或许编译器就因此有能力对它执行语境相关最优化。
+- inline会导致额外的换页行为，降低指令高速缓存装置的击中率。
+- inline只是对编译器的一个命令，不是强制指令，这项申请可以隐喻提出，也可以明确提出，隐喻方式是将函数定义于class定义式内：
+```cpp
+class person{
+public:
+  ...
+  int age()const {return theage;}    //一个被隐喻的inlining申请
+  ...
+private:
+  int theage;
+};
+//这样的函数通常是成员函数。
+```
+
+- 避免将template声明为inlining。会引发代码膨胀
+- virtual函数的调用也都会使inlining函数落空。以为虚函数是在运行期确定，inlinine则是在执行前替换。
+- 编译器通常不对通过函数指针而进行的调用实施inlining
+- 构造函数析构函数不可以inlining。
+- 如果f是程序库内的一个inline函数，客户将f函数本体编进其程勋内，一旦程序库决定改变f，所有用到f的客户端程序都必须重新编译。
+- 大部分调试无法对inline起作用
+- 一开始先不要声明inline，或至少将inline施行范围局限在那些一定成为inline或平淡无奇的函数身上。
+
+总结：
+- 将大多数inlining限制在小型，被频繁调用的函数身上，这可使日后的调试过程和二进制升级过程更容易，也可使潜在的代码膨胀问题最小化，使程序的速度提升机会最大化。
+- 不要只因为function templates出现在头文件，就将它们声明为inline。
