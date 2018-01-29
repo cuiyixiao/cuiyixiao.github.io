@@ -463,6 +463,7 @@ PrintNameAndDisplay(wwsb);
 ##### 条款二十一：必须返回对象时，别妄想返回其reference
 - 绝对不要返回pointer或reference指向一个local stack对象，或返回reference指向一个heap-allocated对象，或返回pointer或reference指向一
 个local static对象而有可能同时需要对个这样的对象。
+
 总结:
 - 这个我懂
 
@@ -492,6 +493,7 @@ void cleareverything(webborwser &wb)
 - 越多的东西被封装，我们改变那些东西的能力也就越大。
 - 越多的函数可以访问成员变量，那么封装性就越差,所以non-member,non-friend函数封装性更好，因为它们没有增加能够访问class中private成分的函数的数量
 - 让函数成为class的non-member并不意味它不可以是一个class的member。c++做法是让non-member函数和class位于同一个namespace里。
+
 ```cpp
 namespace webbrowserstuff{
   class webbrowser{...}
@@ -501,6 +503,7 @@ namespace webbrowserstuff{
 
 - friend函数对class private成员的访问权利和member函数相同。
 - 标准程序库并不是拥有单一，整体，庞大的<c++StandardLibrary>头文件并在其中内涵std命名空间内的每一样东西，而是有数十个头文件，每个头文件生命std的某些技能，我们设计也当如此，如下：
+
 ```cpp
 namespace webbrowserstuff{
   class webbrowser{...};      //核心机能，几乎所有客户都需要
@@ -513,6 +516,7 @@ namespace webbrowserstuff{
       ...cookie相关便利函数
 }
 ```
+
 总结:
 - 宁可拿non-member，non-friend函数替换member函数，这样做可以增加封装性，包裹弹性和机能扩充。
 
