@@ -467,7 +467,8 @@ PrintNameAndDisplay(wwsb);
 - 这个我懂
 
 ##### 条款二十三，宁以non-member，non-friend替换member函数
-- 尽量用non-member替换member函数，例如
+- 尽量用non-member替换member函数，例如：
+
 ```cpp
 class webborwser{
 public:
@@ -488,9 +489,9 @@ void cleareverything(webborwser &wb)
 ```
 
 - 上述做法可以降低耦合度，增加可改变程度。
-- 越多的东西被封装，我们改变那些东西的能力也就越大
+- 越多的东西被封装，我们改变那些东西的能力也就越大。
 - 越多的函数可以访问成员变量，那么封装性就越差,所以non-member,non-friend函数封装性更好，因为它们没有增加能够访问class中private成分的函数的数量
-- 让函数成为class的non-member并不意味它不可以是一个class的member。c++做法是让non-member函数和class位于同一个namespace里
+- 让函数成为class的non-member并不意味它不可以是一个class的member。c++做法是让non-member函数和class位于同一个namespace里。
 ```cpp
 namespace webbrowserstuff{
   class webbrowser{...}
