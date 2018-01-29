@@ -547,11 +547,12 @@ result = 2*onefourth      //可通过编译
 
 总结:
 - 如果你需要为某个函数的所有参数进行类型转化，那么这个函数必须是non-member。
+
 ##### 条款二十五：考虑写出一个不抛异常的swap函数
 - 标准库swap三次对象赋值。
-- 置换下列代码，我们只需置换其pimpl指针，swap效率低下。 
-```cpp
+- 置换下列代码，我们只需置换其pimpl指针，swap效率低下。
 
+```cpp
 class widgetimpl{
 public:
   ...
@@ -597,6 +598,7 @@ namespace std{
 - c++只允许对class templates偏特化，而function templates身上偏特化是行不通的。 如果打算偏特化一个funciont templates时，通常做法是简单的为它添加一个重载模板。
 - 请不要添加任何新东西到std里头
 - 如果widget和widgetimpl都是class templates，可以声明一个non-member swap调用memberswap，不将non-member swap声明为std::swap的特化版本或重载版本。
+
 ```cpp
 namespace widgetstuff{
   temlate<typename T>
@@ -613,6 +615,7 @@ namespace widgetstuff{
 
 - c++的名称查找法则确保将找到global作用域或T所在之命名空间内的任何T专属的swap，如果没有，则用std内的swap。
 - 如果swap效率不足，试着做一下事情：
+
 ```
 1，提供一个public swap成员函数，让它高效的置换你的类型的两个对象值，这个函数绝对不能抛出异常。
 2，在你的class或template所在的命名空间内提供一个non-member swap，并令它调用上述swap函数。
@@ -629,6 +632,7 @@ namespace widgetstuff{
 
 ##### 条款二十六，尽可能延后变量定义式的出现时间
 - 定义一个不使用的变量，可能会造成不必要的构造和析构成本。
+
 ```cpp
 std::string encryptpassword(const std::string &password)
 {
@@ -668,6 +672,7 @@ std::string encryptpassword(const std::string &password)
 
 ##### 条款二十七，尽量少做转型动作
 - c++提供四种类型的新式转型
+
 ```
 const_cast<T>(expression)，通常被用来将对象的常量性移除。它也是唯一有此能力的c++style转型操作符
 dynamic_cast<T>(expression)，主要用来执行安全向下转型。
@@ -676,6 +681,7 @@ static_cast<T>(expression)，强迫隐式转型。
 ```
 
 - 我们唯一使用旧型转型的时机是，当我要调用一个explicit构造函数将一个对象传递给一个函数时，例如:
+
 ```cpp
 class widget{
   public:
@@ -688,6 +694,7 @@ doSomeWork(widget(15));
 
 - 任何一个类型转换往往会使编译器编译出运行期间的代码。
 - 许多应用框架都要求derived classes内的virtual函数代码的第一个动作就先调用bass class的函数。但是会有问题
+
 ```cpp
 class window{
 public:
@@ -702,7 +709,9 @@ public:
   ...
 };
 ```
+
 - 如果想调用base class版本的onresize函数，请这么做：
+
 ```cpp
 class specialwindow:public window{
 public:
@@ -714,6 +723,7 @@ public:
 
 - dynamic_cast的许多实现版本执行速度很慢，在注重效率时应注意
 - 当认定为derived class 对象身上执行derived class操作函数，但你的手上却只有一个指向base的pointer或refrence，可能想到需要dynamic_cast，有两种方法可以避免这种问题
+
 ```cpp
 /*
 使用容器并在内存中直接指向derived class对象指针
@@ -764,6 +774,7 @@ for(vpsw::iterator iter = winptrs.begin();iter!=winptrs.end();++iter)
 ##### 条款二十九，为异常安全而努力是值得的
 
 - 异常安全有两个条件，不泄露任何资源，不允许任何数据败坏。
+
 ```cpp
 class prettymenu{
 public:
@@ -789,6 +800,7 @@ void prettymenu changebackground(std::iostream imgsrc)
 
 - 防止第一个问题·可以用资源管理类，详情见条款十四
 - 异常安全函数提供一下三个保证之一,(异常安全码必须提供以下三种保证之一)
+
 ```
 1，基本承诺，如果异常被抛出，程序内的任何事物仍然保持在有效状态下。
 2，强烈保证，如果异常被抛出，程序状态不改变。即如果函数调用失败，程序会回复到调用函数之前的状态
@@ -797,6 +809,7 @@ void prettymenu changebackground(std::iostream imgsrc)
 
 - 可能的话请提供nothrow保证，但对于大部分函数而言，抉择往往落在基本保证和强烈保证之间
 - 上述代码解决办法，在bgimage上使用智能指针（详见条款十三），之后并改变语句次序，即确保更换完图像再累加
+
 ```cpp
 class prettymenu{
   ...
@@ -823,6 +836,7 @@ void prettymenu::changebackground(std::istream& imgsrc)
 - 当inlining某个函数，或许编译器就因此有能力对它执行语境相关最优化。
 - inline会导致额外的换页行为，降低指令高速缓存装置的击中率。
 - inline只是对编译器的一个命令，不是强制指令，这项申请可以隐喻提出，也可以明确提出，隐喻方式是将函数定义于class定义式内：
+
 ```cpp
 class person{
 public:
