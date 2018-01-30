@@ -862,3 +862,35 @@ private:
 总结：
 - 将大多数inlining限制在小型，被频繁调用的函数身上，这可使日后的调试过程和二进制升级过程更容易，也可使潜在的代码膨胀问题最小化，使程序的速度提升机会最大化。
 - 不要只因为function templates出现在头文件，就将它们声明为inline。
+
+##### 条款三十一，将文件间的编译依存关系降至最低
+- 如果一个类里的成员变量有其他文件里的类的对象，那么这两个文件就会产生编译依存
+- 将接口的实现与声明分开，一个只提供接口，一个负责实现接口
+
+```cpp
+#include<string>
+#include<memory>
+class personimpl;         //person实现类的前置声明。
+class date;                   //person接口用到的classes的前置声明
+class address;
+class person{
+public:
+  person(const std::string& name, const date& birthday, const address& addr);
+  std::string name() const;
+  std::string birthdate() const;
+  std::string address() const;
+  ...
+private:
+  std::tr1::shared_ptr<personimpl>pimpl;
+}
+```
+
+- 不该尝试手动声明标准库
+- 如果使用object references或object pointers可以完成任务，就不要使用objects。
+- 如果能够，尽量以class声明式替换class定义式。
+- 为声明式和定义式提供不同的头文件。
+- 上述class person被称为handle class，制作办法是将函数转交给相应的实现类或成为abstract base class。
+
+总结：
+- 支持编译依存性最小化的一般构想是相依于声明式，不要相依于定义式。基于此两个构想的手段是handle classes 和interface classes。
+- 程序头文件应该以完全且仅有声明式的形式存在。这种做法不论是否涉及templates都适用。
