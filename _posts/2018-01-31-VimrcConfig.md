@@ -1,3 +1,4 @@
+```
 set nocompatible
 filetype off
 syntax enable
@@ -44,7 +45,7 @@ func! CompileRunGcc()
     exec "!g++ % -0 %<"
     exec "! ./%<"
 endfunc
-
+```
 
 
 - vimrc配置
