@@ -894,3 +894,298 @@ private:
 总结：
 - 支持编译依存性最小化的一般构想是相依于声明式，不要相依于定义式。基于此两个构想的手段是handle classes 和interface classes。
 - 程序头文件应该以完全且仅有声明式的形式存在。这种做法不论是否涉及templates都适用。
+
+##### 条款三十二，确定你的public继承塑模出is-a关系
+- public继承为is-a模型，就是说继承类的对象一定是基类对象。
+- 例如长方形与正方形，我们所知的正方形为长方形的一种，考虑下列代码
+
+```cpp
+class ranctangle{
+public: 
+  virtual void setheight(int newheight);
+  virtual void set width(int newwidth);
+  virtual int height()const;
+  virtual int width()const;
+  ...
+}
+void makebigger(rectangle& T)
+{
+  int oldheight = r.height();
+  r.setwidth(r.width()+10);
+  assert(r.height()==oldheight);
+}
+//调用makebiggerzhiqian，s的高度和宽度相同
+//在makebigger函数内，s的宽度改变，但高度不变
+//makebigger返回之后，s的高度再度和其宽度想通过
+```
+
+总结:
+- "public继承"意味is-a,适用于base classes身上的每一件事情一定也适用于derived classes身上，因为每一个derived class对象也都是一个bass class对象。
+
+##### 条款三十三，避免遮掩继承而来的名称
+- 函数内的变量命名会遮盖函数外的，例如
+
+```cpp
+int x;
+void somefunc()
+{
+  double x;
+  std::cin >> x;
+}
+```
+
+- 如果继承bass class并加上重载函数，而又期望重新定义或覆写其中一部分，那么必须为那些原本会被遮盖的每个名称引入一个using声明式。例如:
+
+```cpp
+class base{
+private:
+  int x;
+public:
+  virtual void mf1()=0;
+  virtual void mf1(int);
+  virtual void mf2();
+  void mf3();
+  void mf3(double);
+  ...
+};
+class derived:public base{
+public:
+  using base::mf1;
+  using base::mf3;
+  virtual void mf1();
+  void mf3();
+  void mf4();
+  ...
+}
+```
+
+- using声明式会令继承而来的某给定名称之所有同名函数在derived class中都可见。
+- 假设derived class想继承mf1中没有参数的版本。使用交换函数
+
+```cpp
+class base{
+public:
+  virtual void mf1() = 0;
+  virtual void mf1(int);
+  ...
+};
+class derived: private base{
+public:
+  virtual void mf1();
+  {base::mf1();}//暗自转换成inline
+  ...
+};
+...
+derived d;
+int x;
+d.mf1();
+d.mf1(x);
+```
+
+总结:
+- derived classes内的名称会掩盖base classes内的名称，在public继承下从来没有人希望如此。
+- 为了让被掩盖的名称再见天日，可使用using声明式或转角函数。
+
+##### 条款三十四，区分接口继承和实现继承
+- 类的设计，可能会希望只继承成员函数的接口，有时候又希望同时继承函数的接口和实现，又有时希望能够覆盖继承的实现，有时候又希望继承接口和实现并且不允许覆写任何东西。为了感觉差异，看下面的代码
+
+```cpp
+class shape{
+public:
+  virtual void draw()const = 0;
+  virtual void error(cost std::string &msg);
+  int objetid()const;
+};
+class retangle: public shape{...};
+class ellipse: public shape{...};
+/*
+shape 是个抽象类，所以客户不能够创建shape class的实体，只能创建其derived classes实体，但shape还是强烈影响了所有以public形式继承它的derived classes身上。原因是：
+成员函数的接口总是会被继承。
+声明一个pure virtual函数的目的是为了让derived classes只继承函数接口。
+声明简朴的非纯函数的目的，是让derived classes继承该函数的接口和缺省实现。
+*/
+```
+
+- 允许impure virtual函数同时指定函数声明和函数缺省行为，有可能造成危险，如果继承类的成员函数与基类不同，忘记重定义会出现危险
+，可以独立virtual函数接口和缺省实现
+
+```cpp
+class airplane
+public:
+  virtual void fly(const airport& destination) = 0;
+  ...
+protect:
+  void defaultfly(const airport &destination);
+};
+void airplane::defaultfly(const airport& destination)
+{
+  缺省行为，将飞机飞至指定的目的地。
+}
+//airport::fly已被改成为一个pure virtual函数，只提供飞行接口。
+//若想使用缺省实现，可以再其fly函数对defaultfly做一个inline调用。
+```
+
+- 如果成员函数是non-virtual函数，意味是它并不打算再derived classes中有不同的行为，实际上一个non-virtual成员函数所表现的不变性凌驾其特异性。
+- 声明non-virtual函数的目的是为了令derived classes继承函数的接口及一份强制性实现。
+- 不同类型的声明意味根本意义并不相同的事情，当声明成员函数时，必须谨慎选择，表面以下两个错误.
+
+```cpp
+第一个错误是将所有函数声明为non-virtual。如果一个类为base class，都会有若干个virtual函数
+另一个常见错误是将所有的函数都声明为virtual。
+```
+
+总结：
+- 接口继承和实现继承不同，在public继承下，derived classes总是继承base class的接口。
+- pure virtual函数只具体指定接口继承。
+- 简朴的impure virtual函数具体指定接口继承及缺省实现继承。
+- non-virtual函数具体指定接口继承以及强制性实现继承。
+
+##### 条款三十五，考虑virtual函数意外的其他选择
+- non-virtual interfafce手法实现template method模式
+
+```cpp
+class gamecharacter{
+public:
+  int healthvalue()const
+  {
+      ...                                          
+      /*
+      事前工作，可以包括锁定互斥器，制造日志记录项，验证class约束条件，验证函数的先决条件
+      */
+      int retcal = dohealthvalue();
+      ..,
+      /*
+      事后工作，可以包括互斥器解除锁定，再次验证class约束条件，验证函数的事后条件
+      */
+      return retval;
+  }
+  ...
+private:
+  virtual int dohealthvalue()const
+  {
+    ...
+  }
+}
+```
+
+- function pointers实现strategy模式
+
+```cpp
+class gamecharacter;
+int defaulthealthcalc(const gamecharacter& gc);
+class gamecharacter{
+public:
+  typedef int (*healthcalcfunc)(const gamecharacter);
+  explicit gamecharacter(healthcalcfunc hcf = defaulthealthcalc)
+  :  healthfunc(hcf)
+  {}
+private:
+  healthcalcfunc healthfunc;
+};
+//这样设计可以让同一类的不同实体有不同的健康计算函数
+//某已知类的计算函数可在运行期变更。
+```
+
+- tr1::function完成strategy模式
+
+
+```cpp
+class gamecharacter;
+int defaulthealthcalc(const  gamecharacter& gc);
+class gamecharacter{
+public:
+  typedef std::tr1::function<int (const gamecharacter&)>healthcalcfunc;
+  explicit gamecharacter(healthcalcfunc hcf = defaulthealthcalc)
+  :healthfunc(hcf)
+  {}
+  int healthvalue()const
+  {return healthfunc(*this); }
+  ...
+private:
+  healthcalcfunc healthfunc;
+};
+```
+
+- 传统的strategy模式做法会将计算函数做成一个分离的继承体系的virtual成员函数。
+- 摘要
+
+```
+本条款的根本忠告是，当你为解决问题而寻找某个设计方式时，不妨考虑virtual函数的替代方案。
+1，使用non-virtual interfacec手法。
+2，将virtual函数替换为函数指针成员变量。
+3，以tr1::function成员变量替换virtual函数。
+4，将体系内的virtual函数替换为另一个继承体系内的virtual函数。
+```
+
+总结：
+- virtual函数的替代方案包括nvi手法及strategy设计模式的多种形式，nvi手法自身是一个特殊形式的template method设计模式。
+- 将机能从成员函数移到class外部函数，带来的一个缺点是，非成员函数无法访问class的non-public成员。
+- tr1::function对象的行为就想一般函数指针，这样的对象可接纳“与给定之目标签名式兼容”的所有可调用物。
+
+##### 条款三十六，绝不重新定义继承而来的non-virtual函数
+- 记住virtual是动态绑定，non-virtual是静态绑定
+- 任何情况下都不该重新定义一个继承而来的non-virtual函数。
+
+总结：
+- 绝对不要重新定义继承而来的non-virtual函数。
+
+##### 条款三十七，绝不重新定义继承而来的缺省参数值
+- virtual函数是动态绑定，而缺省参数却是静态绑定。
+- 当一个指针无论指向什么，它的静态类型都是指针的类型
+- 动态类型是指目前所指对象的类型。
+- 调用一个derived函数的virtual时，会使用base class为它所指定的缺省函数值
+- 可以考虑使用替代设计，例如条款35中的nvi。
+
+总结：
+- 绝对不要重新定义一个继承而来的缺省函数参数值，因为缺省参数值都是静态绑定的，而virtual函数确实动态绑定的。
+
+##### 条款三十八，通过复合塑模出has-a或根据某物实现出
+- 复合即某种类型的对象内包含它种类型的对象。
+- 复合类型意味着has-a或is-implemented-in-terms-of。
+- 当复合发生在应用域（程序中的某些事物，例如人）表现出的是has-a。
+- 当复合发生在实现域（缓冲区，互斥器，查找树等等）表现的是is-implemented-in-terms-of。
+- is-templated-in-terms-of可以用list实现set来理解，即不是public继承关系。
+
+总结：
+- 复合的意义和public继承完全不同
+- 在应用域，复合意味has-a、在实现域，复合意味着根据某物实现。
+
+##### 条款三十九，明智而审慎地使用private继承
+- private继承并不意味着is-a关系。
+- private继承意味只有实现部分被继承，接口部分应略去。
+- 尽可能使用复合，必要时才使用privatet继承
+- 当你面对并不存在is-a关系的两个classes，其中一个需要访问另一个的protect函数，或需要重新定义一个或多个virtual函数，private继承极有可能成为正统设计策略。
+
+总结：
+- private继承意味着根据某物实现出，它通常比复合的级别低，但是当derived class需要访问protected base class的成员，或需要重新定义继承而来的virtual函数时，这么设计时合理的。
+- 和复合不同，private继承可以造成empty base最优化。这对利于对象尺寸最小化的程序库开发者而言，可能很重要。
+
+##### 条款四十，明智而审慎的使用多重继承
+- 程序可能有一个以上的base classes继承相同名称，那会导致较多的歧义。即两个基类中有同名的函数但是在继承类中不知道应该调用其中的哪一个
+- 多重继承会导致菱形继承。
+
+```cpp
+class file{...};
+class inputfile:public file{...};
+class outputfile:public file{...};
+class iofile:public inputfile,
+                  public outputfile
+{...};
+//iofile应该只有一个文件名，所以从两个base class继承而来的file name不应该重复
+```
+
+- 从正确的行为上来看，public继承总应是virtual，但是virtual继承有很多成本
+
+```
+1，classes若派生自virtual bases而需要初始化，必须认知其virtual bases不论那些bases距离多远
+2，当一个新的derived class加入继承体系中，它必须承担其virtual bases的初始化责任。
+···
+```
+
+- 非必要不使用virtual bases，如果必须要使用，尽可能避免在其中放置数据。
+- 多重继承的合理应用，将public继承的接口和private继承的实现结合在一起。
+
+总结：
+- 多重继承比单一继承复杂，它可能导致新的歧义性，以及对virtual继承的需要。
+- virtual继承会增加大小，速度，初始化，复杂度等等成本，如果virtual base classes不带任何数据，将是最具实现价值的情况。
+- 多重继承的确有正当用途。其中一个情节涉及public继承某个interface class和private继承某个协助实现的class的两种组合。
