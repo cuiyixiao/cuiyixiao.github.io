@@ -1189,3 +1189,256 @@ class iofile:public inputfile,
 - 多重继承比单一继承复杂，它可能导致新的歧义性，以及对virtual继承的需要。
 - virtual继承会增加大小，速度，初始化，复杂度等等成本，如果virtual base classes不带任何数据，将是最具实现价值的情况。
 - 多重继承的确有正当用途。其中一个情节涉及public继承某个interface class和private继承某个协助实现的class的两种组合。
+
+##### 条款四十一，了解隐式接口和编译期多态
+- 面向对象编程总是以显示接口和运行期多态解决问题。
+
+```cpp
+class widget{
+public:
+  widget();
+  virtual ~widget();
+  virtual std::size_t size() const;
+  virtual void normalize();
+  void swap(widget &other);
+  ...
+};
+void doprocessing(widget &w)
+{
+  if(w.size() > 10 && w != somenastywidget) {
+    widget temp(w);
+    temp.normalize();
+    temp.swap(w);
+  }
+}
+```
+
+- 显示接口就是在源码中明确可见。
+- templates以及模版编程里，隐式接口和编译器多态比较重要。
+- 以下代码，w必须支持哪一种接口，系有template中执行于w身上的操作决定。
+- 以下代码，凡涉及w的任何函数调用，例如operator>和operator！=，有可能造成template具现化，使这些调用成功。
+
+```cpp
+template<typename T>
+void doprocessing(T& w)
+{
+  if(w.size() > 10 && w != somenastywidget)
+  {
+    T temp(w);
+    temp.normalize();
+    temp.swap(w);
+  }
+}
+```
+
+- 隐式接口并不基于函数签名式，而是由有效表达式组成。
+- 无法在template中使用不支持template所要求之隐式接口的对象。
+
+总结：
+- classes和temmplates都支持接口和多态。
+- 对classes而言接口是显示的，以函数签名为中心，多态则是通过virtual函数发生于运行期。
+- 对template参数而言，接口是隐式的，基于有效表达式，多态则是通过template具现化和函数重载解析发生于编译期。
+
+##### 条款四十二，了解typename的意义
+- 在template声明式中，typename和class没有什么不同。
+- template内出现的名称如果相依于某个template参数，称之为从属名称。如果是一个并不依赖任何template参数的名称，例如int，称为非从属名称。
+- 如果从属名称在class内呈嵌套状，我们称它为嵌套从属名称。嵌套从属名称可能会导致解析困难。
+- 任何时候当你想要在typename中指涉一个嵌套从属类型名称，就必须在紧邻它的前一个位置放上关键字typename。
+- typename只被用来验明嵌套从属类型名称，其它名称不该有它的存在。
+- typename不可以出现在base class list内的嵌套从属类型名称之前，也不可以在member initialization list中作为base class 修饰符。
+
+总结：
+- 声明template参数时，前缀关键字class和typename可互换。
+- 请使用关键字typename标识嵌套从属类型名称，但不得在base class lists或member initialization list内以它作为base class修饰符。
+
+##### 条款四十三，学习处理模板化基类内的名称
+- 以下代码，编译器会抱怨sendclear不存在，虽然sendclaer已经在基类中定义，loggingmsgsender是个template参数，不到后来无法确切知道它是什么。
+
+```cpp
+class companya{
+public:
+  ...
+  void sendcleartext(const std::string& msg);
+  void sendencrypted(const std::string& msg);
+  ...
+}
+class companyb{
+public:
+  ...
+  void sendcleartext(cosnt std::string &msg);
+  void sendencrypted(const std::string &msg);
+  ...
+}
+...
+class msginfo{...};
+template<typename company>
+class msgsender{
+public:
+  ...
+  void sendclear(const msginfo& info)
+  {
+    std::string msg;
+    company c;
+    c.sendcleartext(msg);
+  }
+  void sendsecret(const msginfo& info)
+  {...}
+};
+
+template<typename company>
+class loggingmsgsender: public msgsender<company>{
+public:
+  ...
+  void sendclearmsg(const msginfo& info)
+  {
+    sendclear(info);
+  }
+  ...
+};
+```
+
+- 想要改正上述错误，我们可以针对companyz产生一个msgsender特化版。
+
+```cpp
+template<>
+class msgsender<companyz>{
+public:
+  ...
+  void sendsecret(const msginfo& info)
+  {...}
+};
+```
+
+- 我们必须有某种办法令c++不进入templatized base classes观察的行为失效，有三个办法。
+
+```
+第一个是在base class函数调用动作之前加上this->
+第二个是使用using声明。
+第三个是明白指出被调用的函数位于bass class内。
+```
+
+总结：
+- 可在derived class templates内通过this->指涉base class templates内的成员名称，或籍由一个明白写出的bass class资格修饰符完成。
+
+##### 条款四十四，将与参数无关的代码抽离templates
+- 使用template可能会导致代码膨胀。
+- 令base class存储一个protect指针会导致丧失封装。
+- 如矩阵逆转，一个5，一个10大小的，如果操作数据我们可能需要一个指向尾部指针的参数，但是并不好，我们的做法是让类有一个指针的成员变量或者另一个做法是把每一个矩阵的数据放进heap。
+ 
+总结：
+- templates生成多个classes和多个函数，所以任何template代码都不该与某个造成膨胀的template参数产生相依关系
+- 因非类型模板参数而造成的代码膨胀，往往可消除，做法是以函数参数或class成员变量替换template函数。
+- 因类型参数而造成的代码膨胀，往往可降低，做法是让带有完全相同二进制表述的具现类型共享实现码。
+
+##### 条款四十五，运用成员函数模板接受所有兼容类型
+- 如果带有base derived关系的b，d两类型分别具现化某个template，产生出来的两个具现化并不带有base derived关系。例如以下代码无法通过编译。
+
+```cpp
+class top{...};
+class middle: public top{...};
+class bottom: public middle{...};
+top *pt1 = new middle;
+top *pt2 = new bottom;
+const top* pct2 = pt1;
+
+template<typename T>
+class smartptr{
+public:
+  explicit smartptr(T* realptr);
+  ...
+};
+smartptr<top> pt1 = smartptr<middle>(new middle);
+smartptr<top> pt2 = smartptr<bottom>(new bottom);
+smartptr<const top> pct2 = pt1;
+```
+
+- 第一种方法解决上述问题，使用泛化拷贝构造函数
+
+```cpp
+template<typename T>
+class smartprt{
+public:
+  template<typename T>
+  smartptr(const smartptr<U>& other):heldptr(other.get()){...}
+  T* get() const{return heldptr;}
+  ...
+private:
+  T* heldptr;
+}
+/*
+以上代码意思是，对任何类型T和任何类型U，这里可以根据smartptr<U>生成一个smartptr<T>
+*/
+```
+
+总结：
+- 请使用member function templates生成可接受所有兼容类型的函数。
+- 如果你声明member templates用于泛化copy构造或泛化assignment操作，你还是需要声明正常的copy构造函数和copy assignment操作符。
+
+##### 条款四十六，需要类型转换时请为模板抵挡一非成员函数
+- 如果将operator*模板化时按照条款24内那么写会出现问题，operator*的第一个参数被声明为rational<T>，但传递给operator*的第二参数被声明为rational<T>，但传递给operator*的第二个实参类型是int。
+- 令rational<T>class声明适当的operator*为其friend函数，可简化整个问题。
+
+```cpp
+template<typename T>
+class rational{
+public:
+  friend
+  const rational operator *(const rational& lhs,const rational& rhs);
+  ...
+};
+template<typename T>
+class rational{
+public:
+  ...
+firend
+  const rational<T>operator*(const rational<T>& lhs,const rational<T>& rhs);
+  ...
+};
+```
+
+- 以上代码虽然可以成功通过编译，但是无法连接，因为函数只被声明在rational内，  并没有被定义出来。
+
+```cpp
+template<typename T>
+class rational{
+public:
+  ...
+  friend consrt rational operator*(cosnt rational& lhs, const rational& rhs)
+  { 
+    return rational(lhs.numerator()*rhs.numerator(),
+                            lhs.denominator()*rhs.denominator());
+  }
+};
+```
+
+总结：
+- 当我们编写一个class template，而它所提供+之与此template相关的函数支持所有参数之隐式类型转换时，请将那些函数定义为class template内部的friend函数。
+
+##### 条款四十七，请使用traits classes表现类型信息
+- stl有五种迭代器
+
+```
+1,input迭代器，只能向前移动，可读且只能读一次
+2,output迭代器，只能向前移动，可写且只能写一次
+3,forward迭代器，只能向前移动，且可读可写一次以上。
+4,bidirectional迭代器，可向前向后移动。
+5,random access迭代器，可以执行迭代器算数。
+```
+
+- trais是指对内置类型和用户自定义类型的表现必须一样好。
+- 设计一个trais，确认若干将来可取得的类型相关信息，为该信息提供一个名称，提供一个template和一组特化版本，内含你希望支持的类型。
+- 使用trais的方法，建立一组重载函数或模板函数，彼此间的差异只在各自的trais的参数，建立一个控制函数或函数模板，调用上述那些劳工函数，并传递traits class所提供的信息。
+
+
+总结：
+- traits classes使得类型相关信息在编译期可用，它们以templates和templates特化完成实现。
+- 整合重载技术后，traits classes有可能在编译期对类型执行if...else测试。
+
+##### 条款四十八，认识template元编程
+- tmp是编写template-based c++程序并执行于编译器的过程。
+
+总结：
+- template metaprogramming可将工作由运行期移往编译期，因而得以实现早期错误侦测和更高的执行效率
+- TMP可被用来生成基于政策选择组合的客户定制代码，也可用来避免生成对某些特殊类型并不适合的代码。
+# ps：这章最后两个条款看的很迷，等过段时间会回来再仔细看一遍。
+
