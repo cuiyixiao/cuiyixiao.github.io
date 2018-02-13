@@ -1440,5 +1440,103 @@ public:
 总结：
 - template metaprogramming可将工作由运行期移往编译期，因而得以实现早期错误侦测和更高的执行效率
 - TMP可被用来生成基于政策选择组合的客户定制代码，也可用来避免生成对某些特殊类型并不适合的代码。
-# ps：这章最后两个条款看的很迷，等过段时间会回来再仔细看一遍。
+###### ps：这章最后两个条款看的很迷，等过段时间会回来再仔细看一遍。
+
+##### 条款四十九，了解new-handler的行为
+- 当operator new抛出异常以反映一个未满足的内存需求之前，它会先调用一个客户指定的错误处理函数，一个所谓的new-handler。为了指定这个函数，必须调用声明于<new>的set_new_handler。
+
+```cpp
+namespace std{
+  typedef void(*new_handler)();
+  new_handler set_new_handler(new_handler p)throw();
+}
+```
+
+- set_new_handler的参数是一个执政，指向operator new无法分配足够内存时该被调用的函数。
+- 设计一个良好的new-handler函数必须做一下事情
+
+```
+让更多内存可被使用，实现此策略的做法是程序一开始执行就分配一大块儿内存，而后当new-handler每次被调用，将它们释还程序使用。
+
+安装另一个new-handler，做法是令new-handler修改会影响new-handler行为的static数据，namespace数据，或global数据。
+
+卸除new-handler，将null传给set_new_handler，一旦没有安装任何new-handler，operator new会在内存分配不成功时抛出异常。
+
+抛出bad_alloc的异常。
+
+不返回，通常调用abort或exit，这些选择让你在实现new-handler函数时拥有很大的弹性。
+```
+
+- 实现class的专属handler
+
+```cpp
+class widget{
+public:
+  static std::new_handler set_new_handler(std::new_handler p)throw();
+  static void * operator new(std::size_t size)throw(std::bad_alloc);
+private:
+  static std::new_handler currenthandler;
+}
+std::new_handler widget::currenthandler = 0;
+std::new_handler widget::set_new_handler(std::new_handler p)throw()
+{
+  std::new_handler oldhandler = currenthandler;
+  currenthandler = 0;
+  return oldhandler;
+}
+void *widget::operator new(std::size_t size)throw(std::bad_alloc)
+{
+  new handlerholder h(std::set_new_handler(currenthandler));
+  return ::operator new(size);
+}
+```
+
+总结：
+- set_new_handler允许客户指定一个函数，在内存分配无法获得满足时被调用。
+- nothrow new是一个颇为局限的工具，因为它只适用于内存分配，后继的构造函数调用还是可能抛出异常。
+
+##### 条款五十，了解new和delete的合理替换时机
+- 替换operator new和operator delete有下述理由
+
+```
+1，用来检测内存泄漏
+2，为了强化效能
+3，为了收集使用上的统计数据
+4，为了增加分配和归还的速度
+5，为了降低缺省内存管理器带来的空间额外开销
+6，为了弥补缺省分配器中的非最佳齐位
+7，为了将相关对象成簇集中
+8，为了获得非传统的行为
+```
+
+- c++要求所有的operator news返回的指针都有适当的对齐。
+
+总结：
+- 有许多理由需要写个自定的new和delete包括改善效能，对heap运用错误进行调试，收集heap使用信息。
+
+##### 条款五十一，编写new和delete时需固守常规
+- 实现一致性operator new必得返回正确的值，内存不足时必得调用new-handling函数。
+- c++规定，即使客户要求0 bytes，operator new也得返回一个合法指针，把0 bytes申请视为1 bytes申请。
+- 针对class X而设计的operator new，其行为很典型地只为大小刚好为sizeof(x)的对象而设计。
+- c++保证删除null指针永远安全，所以placement delete也必须实现。
+
+总结：
+- operator new应该内含一个无穷循环，并在其中尝试分配内存，如果它无法满足内存需求，就该调用new-handler，它也应该有能力处理0 bytes申请。class专属版本则还应该处理比正确大小更大的申请。
+- operator delete应该在收到null指针时不做任何事情，class专属版本则还应该处理比正确大小更大的错误申请。
+
+##### 条款五十二，写了placement new也要写placement delete
+- 运行期系统寻找参数个数和类型都与operator new相同的某个operator delete。
+- 必须要小心避免覆盖其他的news，假设你有一个base class其中声明唯一一个placement operator new，客户会发现无法使用正常形式的new。
+- 在缺省情况下，c++提供以下形式的operator new：
+
+```cpp
+void *operator new(std::size_t) throw(std::bad_alloc);
+void *operator new(std::size_t void*) throw();
+void *operator new(std::size_t const std::nothrow_t&) throw();
+//名称遮盖问题解决参考条款三十三。
+```
+
+总结：
+- 当你写一个placement operator new，请确定也写出对应的placement operator delete。如果没有这样做，你的程序可能会发生隐微而时断时续的内存泄漏
+- 当你声明placement new和placement delete，请确定不要无意识地遮盖了它们的正常版本。
 
