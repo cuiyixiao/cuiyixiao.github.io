@@ -1540,3 +1540,4 @@ void *operator new(std::size_t const std::nothrow_t&) throw();
 - 当你写一个placement operator new，请确定也写出对应的placement operator delete。如果没有这样做，你的程序可能会发生隐微而时断时续的内存泄漏
 - 当你声明placement new和placement delete，请确定不要无意识地遮盖了它们的正常版本。
 
+# ps:告一段落，等待二周目的开启
